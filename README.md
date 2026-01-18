@@ -1,4 +1,4 @@
-\# Predicting Wine Prices using Machine Learning
+# Predicting Wine Prices using Machine Learning
 
 
 
@@ -14,7 +14,7 @@ The analysis was developed as an academic project and focuses on the application
 
 
 
-\## Project Overview
+## Project Overview
 
 
 
@@ -24,11 +24,11 @@ The global wine market is complex and influenced by multiple factors such as gra
 
 This project aims to:
 
-\- Explore the main drivers of wine pricing
+- Explore the main drivers of wine pricing
 
-\- Model both linear and non-linear relationships between wine characteristics and price
+- Model both linear and non-linear relationships between wine characteristics and price
 
-\- Compare the predictive performance of different machine learning models
+- Compare the predictive performance of different machine learning models
 
 
 
@@ -36,45 +36,45 @@ This project aims to:
 
 
 
-\## Dataset
+## Dataset
 
 
 
-The dataset consists of \*\*1,290 wine samples\*\* described by \*\*15 variables\*\*, including both continuous and categorical features.
+The dataset consists of **1,290 wine samples** described by **15 variables**, including both continuous and categorical features.
 
 
 
-\### Target Variable
+### Target Variable
 
-\- \*\*Price\*\*: Retail price of the wine (in euros), log-transformed to reduce skewness.
+- **Price**: Retail price of the wine (in euros), log-transformed to reduce skewness.
 
 
 
-\### Main Predictors
+### Main Predictors
 
-\- Alcohol by Volume (ABV)
+- Alcohol by Volume (ABV)
 
-\- Vintage year
+- Vintage year
 
-\- Wine style (e.g. red, white, rosé)
+- Wine style (e.g. red, white, rosé)
 
-\- Grape variety
+- Grape variety
 
-\- Country of origin
+- Country of origin
 
-\- Bottle closure type
+- Bottle closure type
 
 
 
 Data preprocessing included:
 
-\- Cleaning non-numeric characters
+- Cleaning non-numeric characters
 
-\- Handling missing values via imputation
+- Handling missing values via imputation
 
-\- Simplifying categorical variables
+- Simplifying categorical variables
 
-\- Splitting the dataset into training (80%) and test (20%) sets
+- Splitting the dataset into training (80%) and test (20%) sets
 
 
 
@@ -82,7 +82,7 @@ Data preprocessing included:
 
 
 
-\## Methods
+## Methods
 
 
 
@@ -90,7 +90,7 @@ Three different modeling approaches were implemented and compared:
 
 
 
-\### 1. Linear Regression (LM)
+### 1. Linear Regression (LM)
 
 Used as a baseline model for its simplicity and interpretability.  
 
@@ -100,7 +100,7 @@ While the model identified statistically significant predictors, its performance
 
 
 
-\### 2. Generalized Additive Models (GAM)
+### 2. Generalized Additive Models (GAM)
 
 GAMs were used to capture non-linear effects of continuous predictors such as ABV and vintage.  
 
@@ -108,7 +108,7 @@ This approach improved predictive performance compared to linear regression whil
 
 
 
-\### 3. Random Forest
+### 3. Random Forest
 
 Random Forests were employed to model complex interactions and non-linear relationships without imposing parametric assumptions.  
 
@@ -120,7 +120,7 @@ This model achieved the best predictive performance among all approaches.
 
 
 
-\## Results
+## Results
 
 
 
@@ -142,17 +142,17 @@ Model performance comparison:
 
 Key findings:
 
-\- \*\*Random Forest\*\* provided the highest accuracy and explained over 75% of the variance in wine prices.
+- **Random Forest** provided the highest accuracy and explained over 75% of the variance in wine prices.
 
-\- \*\*ABV, vintage, wine style, and country of origin\*\* were consistently among the most important predictors.
+- **ABV, vintage, wine style, and country of origin** were consistently among the most important predictors.
 
-\- Higher ABV wines tend to be more expensive.
+- Higher ABV wines tend to be more expensive.
 
-\- Older wines in this dataset were generally priced lower.
+- Older wines in this dataset were generally priced lower.
 
-\- Wines from countries such as France and Italy showed higher average prices.
+- Wines from countries such as France and Italy showed higher average prices.
 
-\- Certain wine styles (e.g. “Rich \& Toasty”, “Crisp \& Fruity”) were associated with higher prices.
+- Certain wine styles (e.g. “Rich \& Toasty”, “Crisp \& Fruity”) were associated with higher prices.
 
 
 
@@ -160,7 +160,7 @@ Key findings:
 
 
 
-\## Discussion
+## Discussion
 
 
 
@@ -176,33 +176,19 @@ Random Forests proved to be the most effective model, although some limitations 
 
 
 
-\## Limitations and Future Work
+## Limitations and Future Work
 
 
 
 Potential improvements include:
 
-\- Expanding the dataset with wine ratings and distribution channels
+- Expanding the dataset with wine ratings and distribution channels
 
-\- Incorporating climate and weather data
+- Incorporating climate and weather data
 
-\- Exploring ensemble methods or deep learning approaches
+- Exploring ensemble methods or deep learning approaches
 
-\- Improving predictions for high-end wines through further model tuning
-
-
-
----
-
-
-
-\## Authors
-
-
-
-\- Alessandro Conte  
-
-\- Stefano Cavallo  
+- Improving predictions for high-end wines through further model tuning
 
 
 
@@ -210,7 +196,21 @@ Potential improvements include:
 
 
 
-\## License
+## Authors
+
+
+
+- Alessandro Conte  
+
+- Stefano Cavallo  
+
+
+
+---
+
+
+
+## License
 
 
 
