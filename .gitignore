@@ -1,0 +1,46 @@
+# Sessione R
+.Rhistory
+.Rapp.history
+.RData
+
+# File di progetto RStudio
+.Rproj.user/
+*.Rproj
+
+# Output e cache
+.Ruserdata
+.Rcache/
+.RCache/
+
+# File temporanei
+*.log
+*.tmp
+*.bak
+*~
+
+# Figure e output automatici
+figures/
+plots/
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Report generati
+*.html
+*.docx
+*.pptx
+
+# File compilati
+*.aux
+*.out
+*.toc
+
+# Pacchetti e librerie locali
+renv/library/
+packrat/lib/
+packrat/src/
+
+# OS
+.DS_Store
+Thumbs.db

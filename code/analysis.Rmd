@@ -1,0 +1,267 @@
+---
+title: "Final Project MSC "
+author: "Alessandro Conte & Stefano Cavallo"
+date: "2025-03-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Loading Required Packages
+
+```{r, warning=FALSE, message=FALSE}
+# Loading required packages
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(mgcv)
+library(janitor)
+
+# Import the dataset
+wines <- read_csv("/Users/aleconte/Documents/UNI/Upf/MODERN STATISTICAL COMPUTING/Final_project/WineDataset.csv")  
+
+# Clean column names for consistency
+wines <- wines %>% clean_names()
+```
+
+# 2. Importing and Cleaning Data
+
+```{r, warning=FALSE}
+# Select only the columns that are needed for modeling
+wines_model <- wines %>%
+  select(price, abv, vintage, style, closure, grape, country)
+
+# Clean price column
+wines_model <- wines_model %>%
+  mutate(price_clean = gsub("£| per bottle| per case| per each", "", price),  # Remove non-numeric characters
+         price_clean = as.numeric(price_clean))  # Convert to numeric
+
+# Clean ABV (Alcohol By Volume)
+wines_model <- wines_model %>%
+  mutate(abv_clean = gsub("ABV |%", "", abv),  # Remove text
+         abv_clean = as.numeric(abv_clean))  # Convert to numeric
+
+# Impute missing ABV values with the median
+wines_model$abv_clean[is.na(wines_model$abv_clean)] <- median(wines_model$abv_clean, na.rm = TRUE)
+
+# Clean and impute missing vintage values
+wines_model <- wines_model %>%
+  mutate(
+    vintage_clean = ifelse(vintage == "NV", NA, vintage),  # Replace 'NV' with NA
+    vintage_clean = sub("^(\\d{4})/.*", "\\1", vintage_clean),  # Extract year
+    vintage_clean = as.numeric(vintage_clean)  # Convert to numeric
+  )
+
+# Impute missing vintage values with the median
+wines_model$vintage_clean[is.na(wines_model$vintage_clean)] <- median(wines_model$vintage_clean, na.rm = TRUE)
+
+# Create a flag for non-vintage wines
+wines_model <- wines_model %>%
+  mutate(
+    is_nv = ifelse(is.na(vintage_clean), 1, 0),  # 1 if missing, 0 if available
+    vintage_clean = ifelse(is.na(vintage_clean), 0, vintage_clean)  # Set 0 for missing vintage values
+  )
+
+# Simplify categorical variables and convert to factors
+wines_model <- wines_model %>%
+  mutate(
+    style_simplified = ifelse(style %in% names(table(style))[table(style) >= 30], style, "Other"),
+    closure_simplified = ifelse(closure %in% names(table(closure))[table(closure) >= 30], closure, "Other"),
+    grape_simplified = ifelse(grape %in% names(table(grape))[table(grape) >= 10], grape, "Other"),
+    country_simplified = ifelse(country %in% names(table(country))[table(country) >= 10], country, "Other")
+  ) %>%
+  mutate(across(c(style_simplified, closure_simplified, grape_simplified, country_simplified), as.factor))
+
+# Drop rows with missing values in the target column or predictors
+wines_model_clean <- wines_model %>% drop_na(price_clean, abv_clean, vintage_clean, style_simplified, closure_simplified)
+
+# Check if there are any remaining NAs
+sum(is.na(wines_model_clean))
+```
+
+# 3. Exploratory Data Analysis
+
+```{r, warning=FALSE}
+# Histogram for log-transformed price distribution with a dashed line for the normal curve
+ggplot(wines_model_clean, aes(x = log(price_clean + 1))) +
+  geom_histogram(bins = 50, fill = "pink", color = "black", alpha = 0.7, aes(y = ..density..)) +
+  stat_function(fun = dnorm, 
+                args = list(mean = mean(log(wines_model_clean$price_clean + 1), na.rm = TRUE),
+                            sd = sd(log(wines_model_clean$price_clean + 1), na.rm = TRUE)), 
+                color = "black", linetype = "dashed", size = 0.5) +
+  theme_minimal(base_size = 14) +
+  labs(title = "Log(Price+1) Distribution", x = "Log(Price)", y = "Density")
+
+# Histogram for ABV distribution with normal distribution line
+ggplot(wines_model_clean, aes(x = abv_clean)) +
+  geom_histogram(bins = 30, fill = "purple", color = "black", alpha = 0.7, aes(y = ..density..)) +
+  stat_function(fun = dnorm, 
+                args = list(mean = mean(wines_model_clean$abv_clean, na.rm = TRUE), 
+                            sd = sd(wines_model_clean$abv_clean, na.rm = TRUE)), 
+                color = "black", linetype = "dashed", linewidth = 0.5) + 
+  theme_minimal(base_size = 14) +
+  labs(title = "Alcohol By Volume (ABV) Distribution", 
+       x = "Alcohol By Volume (%)", y = "Density") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_continuous(labels = scales::label_number())
+
+# Distribution of wines by country
+ggplot(wines_model_clean %>% count(country_simplified) %>% arrange(desc(n)) %>% filter(n > 5), aes(x = reorder(country_simplified, -n), y = n)) + 
+  geom_bar(stat = "identity", fill = "pink", color = "black", alpha = 0.7) +
+  theme_minimal(base_size = 14) +
+  labs(title = "Wine Distribution by Country", x = "Country", y = "Number of Wines") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::label_comma())
+
+# Distribution of wines by grape type
+ggplot(wines_model_clean %>% count(grape_simplified) %>% arrange(desc(n)) %>% filter(grape_simplified != "Other" & n > 5), aes(x = reorder(grape_simplified, -n), y = n)) + 
+  geom_bar(stat = "identity", fill = "purple", color = "black", alpha = 0.7) +
+  theme_minimal(base_size = 14) +
+  labs(title = "Wine Distribution by Grape Type", x = "Grape Type", y = "Number of Wines") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::label_comma())
+
+# Violin plot for price distribution by country
+ggplot(wines_model_clean, aes(x = country_simplified, y = price_clean)) +
+  geom_violin(fill = "pink", color = "black", alpha = 0.7) +
+  geom_boxplot(width = 0.1, color = "black", alpha = 0.5) +  
+  theme_minimal(base_size = 14) +
+  labs(title = "Price Distribution by Country", 
+       x = "Country", y = "Price (€)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
+  scale_y_continuous(labels = scales::label_comma()) +  
+  theme(axis.text.x = element_text(size = 12), 
+        axis.title = element_text(size = 14)) 
+```
+
+
+```{r}
+# Divide the dataset into training and test sets (80% train, 20% test)
+set.seed(123)
+trainIndex <- createDataPartition(wines_model_clean$price_clean, p = 0.8, list = FALSE)
+train <- wines_model_clean[trainIndex, ]
+test <- wines_model_clean[-trainIndex, ]
+
+# Check dimensions of train and test sets
+dim(train)
+dim(test)
+
+# Convert categorical variables to factors in both train and test sets
+train <- train %>%
+  mutate(across(where(is.character), as.factor))
+
+test <- test %>%
+  mutate(across(where(is.character), as.factor))
+```
+
+# 4. Model Construction and Evaluation
+
+## 4.1 Linear Regression Model (Base)
+
+```{r}
+# Base linear regression model (log-transformed price)
+model_base <- lm(log(price_clean + 1) ~ abv_clean + vintage_clean + is_nv + 
+                   style_simplified + closure_simplified, data = wines_model_clean)
+
+# Output of the model
+summary(model_base)
+```
+
+## 4.2 Generalized Additive Model (GAM)
+
+```{r}
+# Carica il pacchetto mgcv per il modello GAM
+library(mgcv)
+
+# Costruisci il modello GAM (log-prezzo trasformato)
+model_gam <- gam(log(price_clean + 1) ~ 
+                   s(abv_clean) +             # Effetto non lineare di ABV
+                   s(vintage_clean) +         # Effetto non lineare di vintage
+                   is_nv +                 # Effetto non lineare di is_nv
+                   style_simplified +         # Variabili categoriali
+                   closure_simplified + 
+                   grape_simplified + 
+                   country_simplified, 
+                 data = wines_model_clean)
+
+# Sommarizzare i risultati del modello
+summary(model_gam)
+
+# Visualizza gli effetti spline (grafici per le variabili con effetto non lineare)
+plot(model_gam, pages = 1, shade = TRUE)
+```
+
+## 4.3 Random Forest Model
+
+```{r}
+sum(is.na(train))
+
+# Remove rows with missing values (or impute them)
+train <- train %>% drop_na()
+
+# Check again for missing values
+sum(is.na(train))
+
+# Train the Random Forest model
+train_control <- trainControl(method = "cv", number = 5)  # 5-fold cross-validation
+model_rf <- train(log(price_clean + 1) ~ ., 
+                  data = train, 
+                  method = "rf", 
+                  trControl = train_control)
+
+# Output the results
+print(model_rf)
+```
+
+```{r, message=FALSE}
+library(dplyr)
+library(tidyr)
+
+# Remove NAs from relevant variables in the test set
+test_clean <- test %>%
+  drop_na(price_clean, abv_clean, vintage_clean, style_simplified, closure_simplified)
+
+# Realign factor levels between the test and train sets, removing rows with new levels
+factor_cols <- names(select(test_clean, where(is.factor)))
+
+for (col in factor_cols) {
+  levels_train <- levels(train[[col]])
+  test_clean <- test_clean %>%
+    filter(.data[[col]] %in% levels_train) %>% # Keeps only existing levels from the train set
+    mutate("{col}" := factor(.data[[col]], levels = levels_train))
+}
+
+# Make predictions on the cleaned test set
+pred_rf <- predict(model_rf, newdata = test_clean)
+
+# Calculate residuals (now it should work)
+res_rf <- test_clean$price_clean - pred_rf
+
+# Add the predictions and residuals to the dataframe (no error now)
+test_clean$pred_rf <- pred_rf
+test_clean$resid_rf <- res_rf
+
+# Visualize residuals vs predictions
+ggplot(test_clean, aes(x = pred_rf, y = res_rf)) +
+  geom_point() + 
+  geom_smooth(method = "loess", se = FALSE, color = "red") + 
+  geom_abline(slope = 0, intercept = 0, color = "gray") +
+  labs(x = 'Prediction from RF model', y = 'Residuals') +
+  ggtitle("Residuals vs Predictions (Random Forest)")
+  theme_minimal()
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+# Residual histogram
+ggplot(test_clean, aes(x = res_rf)) +
+  geom_histogram(bins = 30, fill = "pink", color = "black", alpha = 0.7, aes(y = ..density..)) +
+  stat_function(fun = dnorm, 
+                args = list(mean = mean(res_rf), sd = sd(res_rf)), 
+                color = "red", linetype = "dashed") +
+  labs(title = "Residual Distribution", x = "Residuals", y = "Density")
+  theme_minimal()
+```
+
+

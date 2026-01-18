@@ -1,0 +1,84 @@
+---
+title: "Wine Price Prediction Dashboard"
+author: "Alessandro Conte & Stefano Cavallo"
+output: 
+  html_document:
+    output_dir: "/Users/aleconte/Documents/UNI/Upf/MODERN STATISTICAL COMPUTING/Final_project"
+    output_file: "Wine_Dashboard.html"
+runtime: shiny
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+library(DT)
+```
+
+<style>
+  body {
+    font-size: 18px; 
+  }
+  h1 {
+    font-size: 28px;  
+  }
+  h2 {
+    font-size: 24px;  
+  }
+  p {
+    font-size: 20px;  
+  }
+  img {
+    width: 60%;  
+    max-width: 900px;  
+    height: auto;  
+    display: block;  
+    margin-left: auto; 
+    margin-right: auto;  
+  }
+</style>
+
+
+---
+
+# Model Performance Comparison
+
+```{r, echo=FALSE}
+model_data <- data.frame(
+  Model = c("Linear Model", "GAM", "Random Forest"),
+  R2 = c(0.4619, 0.5540, 0.7584)
+)
+
+DT::renderDataTable({
+  model_data
+}, options = list(
+  dom = 't' 
+))
+```
+
+1. **Linear Regression (LM)**: The model showed an R-squared value of 0.4619, explaining about 46% of the variance in wine prices. Key predictors include ABV (positive relationship with price), vintage (negative relationship), and wine style, with “Crisp & Fruity” and “Rich & Toasty” styles showing positive effects.
+
+2. **Generalized Additive Model (GAM)**: This model improved on LM with an adjusted R-squared of 0.554. It captured non-linear relationships, particularly with ABV and vintage, and showed significant effects of wine style, country, and grape variety.
+
+3. **Random Forests**: The best-performing model with an R-squared of 0.7584, explaining over 75% of the variance. It had the lowest RMSE (0.3398) and showed strong predictive accuracy. Key predictors included ABV, vintage, wine style, and country, with interactions between variables like grape variety and country of origin significantly influencing price.
+
+---
+
+# Residual Plot for the Random Forest Model
+
+```{r, echo=FALSE}
+knitr::include_graphics("/Users/aleconte/Documents/UNI/Upf/MODERN STATISTICAL COMPUTING/Final_project/residuals_vs_predictions_minimal.png")
+```
+
+**Residual Plot:**
+
+The **residual plot** for the Random Forest model shows a slight **upward trend** in the residuals as predictions increase, indicating that the model slightly **underestimates higher-priced wines**. Although the model captures the relationships well, the residuals exhibit a slight curvature, suggesting that further **improvement** could be made, possibly through additional tuning or variables.
+
+---
+
+# Residual Distribution Plot
+
+```{r, echo=FALSE}
+knitr::include_graphics("/Users/aleconte/Documents/UNI/Upf/MODERN STATISTICAL COMPUTING/Final_project/residual_histogram_minimal.png")
+```
+
+**Residual Distribution Plot:**
+
+The **residual distribution plot** shows that the residuals are slightly **right-skewed**, with most concentrated around zero. However, some higher residuals indicate **underestimation** of the price for **expensive wines**. While the model performs well overall, there may be outliers or high-priced wines where the predictions could be improved.
